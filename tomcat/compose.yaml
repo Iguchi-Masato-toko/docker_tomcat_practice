@@ -1,0 +1,46 @@
+services:
+ app:
+   container_name: my_tomcat
+   image: tomcat:9.0-jdk11
+   ports: 
+    - 8090:8080
+   volumes:
+    - ./webapps:/usr/local/tomcat/webapps
+   environment:
+      DB_HOST: db
+      DB_NAME: todoDB
+      DB_USER: dbuser
+      DB_PASS: practicepass
+      DB_TABLE: todo
+      DB_CATEGORY_TABLE: category
+      CLASSPATH: /usr/local/tomcat/lib/*:/usr/local/tomcat/webapps/todoApp/WEB-INF/lib/*:/usr/local/tomcat/webapps/todoApp/WEB-INF/classes
+
+   command: >
+      bash -c "
+      cd /usr/local/tomcat/webapps/todoApp/WEB-INF/classes/ &&
+      javac bean/*.java &&
+      javac *.java &&
+      catalina.sh run"
+   depends_on:
+      db:
+        condition: service_healthy
+ db:
+  image: mysql:8.0
+  container_name: tomcat-db
+  ports:
+    - 3307:3306  # ポートマッピングを追加
+  environment:
+      MYSQL_ROOT_PASSWORD: practicepass
+      MYSQL_DATABASE: todoDB
+      MYSQL_USER: dbuser
+      MYSQL_PASSWORD: practicepass
+  healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "db", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+  volumes:
+    - db-data:/var/lib/mysql
+volumes:
+  db-data:
